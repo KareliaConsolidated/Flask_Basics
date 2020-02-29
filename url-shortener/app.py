@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 import json
 import os.path
 from werkzeug.utils import secure_filename
+
 app = Flask(__name__)
 app.secret_key = 'kareliaconsolidated'
 
@@ -36,7 +37,7 @@ def your_url():
 		else:
 			f = request.files['file']
 			full_name = request.form['code'] + secure_filename(f.filename)
-			f.save('E:/Project/Flask Basics/url-shortener/images/' + full_name)
+			f.save('E:/Project/Flask Basics/url-shortener/static/user_files/' + full_name)
 			urls[request.form['code']] = {'file': full_name}
 
 		with open('urls.json','w') as url_file:
@@ -46,14 +47,18 @@ def your_url():
 	else:
 		return redirect(url_for('home')) # Provided Name of the Function i.e. home
 
-@app.route('/<string:code>') # Look for any string after the first slash, and put it into the variable called code
-
+@app.route('/<string:code>')
 def redirect_to_url(code):
-	if os.path.exists('urls.json'):
-		with open('urls.json') as urls_file:
-			urls  = json.load(urls_file)
-			if code in urls.keys():
-				if 'url' in urls[code].keys():
-					return redirect(urls[code]['url'])
+    if os.path.exists('urls.json'):
+        with open('urls.json') as urls_file:
+            urls = json.load(urls_file)
+            if code in urls.keys():
+                if 'url' in urls[code].keys():
+                    return redirect(urls[code]['url'])
+                else:
+                    return redirect(url_for('static', filename='user_files/' + urls[code]['file']))
+    return abort(404)
 
-
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('page_not_found.html'), 404
